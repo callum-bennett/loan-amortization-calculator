@@ -59,6 +59,7 @@ deploy production:
   environment:
     name: production
     url: $PRODUCTION_DOMAIN
+  when: manual
   script:
     - npm i -g surge
     - surge --project ./public --domain $PRODUCTION_DOMAIN
