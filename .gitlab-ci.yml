@@ -38,17 +38,23 @@ test website:
     - npm i
     - npm i -g create-react-app
     - yarn run start
-    - sleep 5 &
-    - curl  -m 5 "http://localhost:3000" | tac | tac | grep -q "calculator"
+    - sleep 20 &
+    - curl -m 5 "http://localhost:3000" | tac | tac | grep -q "calculator"
 
 deploy staging:
   stage: deploy staging
+  environment:
+    name: staging
+    url: http://cb591-loan-amortization-staging.surge.sh
   script:
     - npm i -g surge
     - surge --project ./public --domain http://cb591-loan-amortization-staging.surge.sh
 
 deploy production:
   stage: deploy production
+  environment:
+    name: staging
+    url: http://cb591-loan-amortization.surge.sh
   script:
     - npm i -g surge
     - surge --project ./public --domain http://cb591-loan-amortization.surge.sh
