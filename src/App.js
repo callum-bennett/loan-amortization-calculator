@@ -1,10 +1,15 @@
 import React, { useState } from "react";
-import styled from "styled-components";
-import { Box, Grid, Zoom } from "@material-ui/core";
+import {
+  Box,
+  Fade,
+  Grid,
+  isWidthDown,
+  withWidth
+} from "@material-ui/core";
 import Calculator from "./Calculator";
 import Report from "./Report";
 
-export default () => {
+const App = props => {
   const [data, setData] = useState(null);
 
   const handleCalculated = data => {
@@ -16,25 +21,23 @@ export default () => {
   };
 
   return (
-    <Root>
-      <Grid container>
-        <Grid item xs={false} md={4} />
-        <Grid item xs={12} md={4}>
-          <Box mt={20}>
-            {data === null ? (
-              <Calculator onCalculated={handleCalculated} />
-            ) : (
-              <Report onReset={handleReset} data={data} />
-            )}
-          </Box>
+    <Box mt={isWidthDown("sm", props.width) ? 2 : 20}>
+      <Grid container spacing={2} className="main">
+        <Grid item xs={false} md={1} />
+        <Grid item xs={12} md={3}>
+          <Calculator onCalculated={handleCalculated} onReset={handleReset} />
         </Grid>
-        <Grid item xs={false} md={4} />
+        <Grid item xs={12} md={7}>
+          {data !== null && (
+            <Fade in={data !== null} timeout={1000}>
+              <Report onReset={handleReset} data={data} />
+            </Fade>
+          )}
+        </Grid>
+        <Grid item xs={false} md={1} />
       </Grid>
-    </Root>
+    </Box>
   );
 };
 
-const Root = styled.div`
-  background: #efefef;
-  height: 100vh;
-`;
+export default withWidth()(App);

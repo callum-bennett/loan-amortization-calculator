@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import styled from "styled-components";
+import React from "react";
 
 import {
+  Box,
   Button,
   Card,
   CardContent,
@@ -12,39 +12,41 @@ import {
   Input,
   InputAdornment,
   InputLabel,
-  LinearProgress
+  LinearProgress,
+  MenuItem,
+  Select
 } from "@material-ui/core";
-import { ToggleButtonGroup, ToggleButton } from "@material-ui/lab";
 import { Formik } from "formik";
 import * as Yup from "yup";
 
+
 const DURATION = {
+  WEEK: "weeks",
   MONTH: "months",
   YEAR: "years"
 };
 
 export default props => {
-  const [state, setState] = useState({
-    amount: 0,
-    interestRate: 4.5,
-    period: 12,
-    periodType: DURATION.MONTH,
-    loading: false,
-    errors: {}
-  });
+  const { onReset } = props;
 
-  const calculateEqualTotalPayments = (amount, i, N) => {
+  /**
+   * @param amount
+   * @param i
+   * @param periods
+   * @returns {{name: string, rows: []}}
+   */
+  const calculateEqualTotalPayments = (amount, i, periods) => {
     let n = 1;
-    let data = [];
+    let rows = [];
 
     let prevOutstandingBalance = amount;
-    while (n <= N) {
-      const paymentAmount = (i * amount) / (1 - Math.pow(1 + i, -N));
-      const principalAmountPaid = paymentAmount * Math.pow(1 + i, -(1 + N - n));
+    while (n <= periods) {
+      const paymentAmount = (i * amount) / (1 - (1 + i) ** -periods);
+      const principalAmountPaid = paymentAmount * (1 + i) ** -(1 + periods - n);
       const interestAmountPaid = paymentAmount - principalAmountPaid;
       const outstandingBalance = prevOutstandingBalance - principalAmountPaid;
 
-      data.push({
+      rows.push({
         paymentAmount,
         principalAmountPaid,
         interestAmountPaid,
@@ -55,53 +57,88 @@ export default props => {
       n++;
     }
 
-    return data;
+    return {
+      name: "Equal Total Payments",
+      rows
+    };
   };
 
-  const calculateEqualPrincipalPayments = (amount, i, N) => {
+  /**
+   * @param amount
+   * @param i
+   * @param periods
+   * @returns {{name: string, rows: []}}
+   */
+  const calculateEqualPrincipalPayments = (amount, i, periods) => {
     let n = 1;
+    let rows = [];
     let prevOutstandingBalance = amount;
-    while (n <= N) {
+    while (n <= periods) {
+      const principalAmountPaid = amount / periods;
       const interestAmountPaid = prevOutstandingBalance * i;
+      const paymentAmount = principalAmountPaid + interestAmountPaid;
+      const outstandingBalance = interestAmountPaid / i - principalAmountPaid;
 
+      rows.push({
+        paymentAmount,
+        principalAmountPaid,
+        interestAmountPaid,
+        outstandingBalance
+      });
+
+      prevOutstandingBalance = outstandingBalance;
+      n++;
     }
+
+    return {
+      name: "Equal Principal Payments",
+      rows
+    };
   };
 
   /**
    *
-   * @param annualInterestRate
+   * @param apr
    * @param periodType
    * @returns {number}
    */
-  const calculateInterestRatePerPeriod = (annualInterestRate, periodType) => {
-    let i = annualInterestRate / 100;
+  const calculateInterestRatePerPeriod = (apr, periodType) => {
+    let i = apr / 100;
     if (periodType === DURATION.MONTH) {
-      i = i / 12;
+      i /= 12;
+    } else if (periodType === DURATION.WEEK) {
+      i /= 52;
     }
     return i;
   };
 
   /**
-   *
    * @param values
+   * @param setSubmitting
    */
-  const handleSubmit = values => {
-    setState({ loading: true });
-    const i = calculateInterestRatePerPeriod(
-      values.interestRate,
-      values.periodType
+  const handleSubmit = (values, { setSubmitting }) => {
+    const amount = parseInt(values.amount);
+    const apr = parseFloat(values.apr);
+    const periods = parseInt(values.period);
+    const periodType = values.periodType;
+    const currency = values.currency;
+    const i = calculateInterestRatePerPeriod(apr, periodType);
+
+    const equalTotalPayments = calculateEqualTotalPayments(amount, i, periods);
+    const equalPrincipalPayments = calculateEqualPrincipalPayments(
+      amount,
+      i,
+      periods
     );
-    const data = calculateEqualTotalPayments(values.amount, i, values.period);
 
-    // setTimeout(() => {
-    props.onCalculated(data);
-    // }, 2000)
-  };
-
-  const handlePeriodChange = (e, value) => {
-    if (value !== null) {
-      setState({ periodType: value });
-    }
+    setTimeout(() => {
+      props.onCalculated({
+        currency,
+        equalTotalPayments,
+        equalPrincipalPayments
+      });
+      setSubmitting(false);
+    }, 1000);
   };
 
   return (
@@ -110,10 +147,11 @@ export default props => {
       <CardContent>
         <Formik
           initialValues={{
-            amount: 100000,
-            interestRate: 5,
-            period: 5,
-            periodType: DURATION.YEAR
+            amount: "10000",
+            apr: "5",
+            period: "12",
+            periodType: DURATION.YEAR,
+            currency: "£"
           }}
           onSubmit={handleSubmit}
           validationSchema={Yup.object().shape({
@@ -122,12 +160,19 @@ export default props => {
               .positive("Amount cannot be less than 0")
               .required("Amount is required")
               .typeError("Amount must be a number"),
-            interestRate: Yup.number()
+            apr: Yup.number()
               .min(0, "Interest rate cannot be less than 0")
               .max(100, "Interest rate cannot be greater than 100")
-              .required()
+              .required("Interest rate is required")
               .typeError("Interest rate must be a number"),
-            period: Yup.number().required(),
+            currency: Yup.string(),
+            period: Yup.number()
+              .integer("Amount must be an integer")
+              .positive("Amount cannot be less than 0")
+              .min(1, "Period be less than 1")
+              .max(1000, "Period cannot be greater than 1000")
+              .required("Period is required")
+              .typeError("Period must be a number"),
             periodType: Yup.string().required()
           })}
         >
@@ -136,12 +181,10 @@ export default props => {
               values,
               touched,
               errors,
-              dirty,
               isSubmitting,
               handleChange,
               handleBlur,
-              handleSubmit,
-              handleReset
+              handleSubmit
             } = props;
             return (
               <form onSubmit={handleSubmit}>
@@ -152,17 +195,26 @@ export default props => {
                       margin="normal"
                       error={errors.amount && touched.amount}
                     >
-                      <InputLabel htmlFor="amount">
-                        Amount you plan to borrow
-                      </InputLabel>
+                      <InputLabel htmlFor="amount">Loan amount</InputLabel>
                       <Input
                         id="amount"
-                        autoFocus={true}
                         value={values.amount}
                         onChange={handleChange}
                         onBlur={handleBlur}
-                        startAdornment={
-                          <InputAdornment position="start">£</InputAdornment>
+                        endAdornment={
+                          <InputAdornment position="end">
+                            <Select
+                              id="currency"
+                              inputProps={{ tabIndex: "-1" }}
+                              value={values.currency}
+                              onChange={handleChange("currency")}
+                              onBlur={handleBlur("currency")}
+                            >
+                              <MenuItem value="£">£</MenuItem>
+                              <MenuItem value="$">$</MenuItem>
+                              <MenuItem value="€">€</MenuItem>
+                            </Select>
+                          </InputAdornment>
                         }
                       />
                       <FormHelperText>
@@ -174,15 +226,14 @@ export default props => {
                     <FormControl
                       fullWidth={true}
                       margin="normal"
-                      error={errors.interestRate && touched.interestRate}
+                      error={errors.apr && touched.apr}
                     >
-                      <InputLabel htmlFor="interestRate">
+                      <InputLabel htmlFor="apr">
                         With an annual interest rate of
                       </InputLabel>
-
                       <Input
-                        id="interestRate"
-                        value={values.interestRate}
+                        id="apr"
+                        value={values.apr}
                         onChange={handleChange}
                         onBlur={handleBlur}
                         endAdornment={
@@ -190,63 +241,56 @@ export default props => {
                         }
                       />
                       <FormHelperText>
-                        {errors.interestRate &&
-                          touched.interestRate &&
-                          errors.interestRate}
+                        {errors.apr && touched.apr && errors.apr}
                       </FormHelperText>
                     </FormControl>
                   </Grid>
                   <Grid item xs={12}>
-                    <PeriodGroup>
-                      <FormControl
-                        fullWidth={true}
-                        margin="normal"
-                        error={errors.period && touched.period}
-                      >
-                        <InputLabel htmlFor="period">
-                          For a period of
-                        </InputLabel>
-                        <Input
-                          id="period"
-                          disabled={state.loading}
-                          variant="outlined"
-                          value={values.period}
-                          onChange={handleChange}
-                          onBlur={handleBlur}
-                          endAdornment={
-                            <InputAdornment position="start">
-                              {state.periodType ? state.periodType : ""}
-                            </InputAdornment>
-                          }
-                        />
-                        <FormHelperText>
-                          {errors.period && touched.period && errors.period}
-                        </FormHelperText>
-                      </FormControl>
-                      <ToggleButtonGroup
-                        id="periodType"
-                        value={values.periodType}
-                        exclusive
-                        // onChange={handlePeriodChange}
+                    <FormControl
+                      fullWidth={true}
+                      margin="normal"
+                      error={errors.period && touched.period}
+                    >
+                      <InputLabel htmlFor="period">
+                        Paid back over a period of
+                      </InputLabel>
+                      <Input
+                        id="period"
+                        variant="outlined"
+                        value={values.period}
                         onChange={handleChange}
                         onBlur={handleBlur}
-                      >
-                        <ToggleButton value={DURATION.MONTH}>
-                          Months
-                        </ToggleButton>
-                        <ToggleButton value={DURATION.YEAR}>Years</ToggleButton>
-                      </ToggleButtonGroup>
-                    </PeriodGroup>
+                        endAdornment={
+                          <InputAdornment position="end">
+                            <Select
+                              id="periodType"
+                              inputProps={{ tabIndex: "-1" }}
+                              value={values.periodType}
+                              onChange={handleChange("periodType")}
+                              onBlur={handleBlur("periodType")}
+                            >
+                              <MenuItem value={DURATION.YEAR}>Years</MenuItem>
+                              <MenuItem value={DURATION.MONTH}>Months</MenuItem>
+                              <MenuItem value={DURATION.WEEK}>Weeks</MenuItem>
+                            </Select>
+                          </InputAdornment>
+                        }
+                      />
+                      <FormHelperText>
+                        {errors.period && touched.period && errors.period}
+                      </FormHelperText>
+                    </FormControl>
                   </Grid>
                   <Grid item xs={12}>
                     <Grid container spacing={4}>
                       <Grid item xs={6}>
                         <FormControl fullWidth margin="normal">
                           <Button
+                            tabIndex="-1"
                             variant="contained"
                             color="secondary"
-                            onClick={handleReset}
-                            disabled={!dirty || isSubmitting}
+                            onClick={onReset}
+                            disabled={isSubmitting}
                           >
                             Clear
                           </Button>
@@ -260,15 +304,18 @@ export default props => {
                             variant="contained"
                             disabled={isSubmitting}
                           >
-                            Calculate repayments
+                            Calculate
                           </Button>
                         </FormControl>
                       </Grid>
                     </Grid>
                   </Grid>
                 </Grid>
-
-                {state.loading && <LinearProgress />}
+                <Grid item>
+                  <Box mt={1} style={{ minHeight: "5px" }}>
+                    {isSubmitting && <LinearProgress />}
+                  </Box>
+                </Grid>
               </form>
             );
           }}
@@ -277,11 +324,3 @@ export default props => {
     </Card>
   );
 };
-
-const PeriodGroup = styled.div`
-  display: flex;
-  align-items: baseline;
-  > :last-child {
-    margin-left: 16px;
-  }
-`;
