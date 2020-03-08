@@ -9,10 +9,9 @@ stages:
 build site:
   stage: build
   script:
-    - sed -i '' "s/%%VERSION%%/$CI_COMMIT_SHORT_SHA/" ./public/index.html
     - npm i
     - npm i -g create-react-app
-    - yarn un build
+    - yarn run build
   artifacts:
     paths:
       - ./public
