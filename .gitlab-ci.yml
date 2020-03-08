@@ -8,8 +8,8 @@ cache:
 stages:
   - build
   - test
-  - deploy
-  - post-deploy
+  - deploy production
+  - production tests
 
 build site:
   stage: build
@@ -37,8 +37,8 @@ test website:
     - npm i
     - npm i -g create-react-app
     - yarn run start
-    - sleep 3
-    - curl  -m 5 "http://localhost:3000" | tac | grep -q "calculator"
+    - sleep 5 &
+    - curl  -m 5 "http://localhost:3000" | tac | tac | grep -q "calculator"
 
 deploy to surge:
   stage: deploy
