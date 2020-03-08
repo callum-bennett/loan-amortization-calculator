@@ -38,7 +38,7 @@ test website:
     - npm i -g create-react-app
     - yarn run start
     - sleep 3
-    - curl "http://localhost:3000" | tac | grep -q "calculator"
+    - curl  -m 5 "http://localhost:3000" | tac | grep -q "calculator"
 
 deploy to surge:
   stage: deploy
