@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  Box,
-  Fade,
-  Grid,
-  isWidthDown,
-  withWidth
-} from "@material-ui/core";
+import { Box, Grid, isWidthDown, withWidth } from "@material-ui/core";
 import Calculator from "./Calculator";
 import Report from "./Report";
 
@@ -28,11 +22,7 @@ const App = props => {
           <Calculator onCalculated={handleCalculated} onReset={handleReset} />
         </Grid>
         <Grid item xs={12} md={7}>
-          {data !== null && (
-            <Fade in={data !== null} timeout={1000}>
-              <Report onReset={handleReset} data={data} />
-            </Fade>
-          )}
+          {data !== null && <Report onReset={handleReset} data={data} />}
         </Grid>
         <Grid item xs={false} md={1} />
       </Grid>
