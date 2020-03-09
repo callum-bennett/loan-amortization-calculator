@@ -12,6 +12,7 @@ variables:
 stages:
   - build
   - test
+  - deploy review
   - deploy staging
   - deploy production
   - production tests
@@ -44,6 +45,31 @@ test website:
     - yarn run start &
     - sleep 3
     - curl "http://localhost:3000" | tac | tac | grep -q "calculator"
+
+deploy review:
+  stage: deploy review
+  only:
+    - merge_requests
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: http://cb591-loan-amortization-$CI_ENVIRONMENT_SLUG.surge.sh
+    on_stop: stop review
+  script:
+    - npm i --global surge
+    - surge --project ./public --domain http://cb591-loan-amortization-$CI_ENVIRONMENT_SLUG.surge.sh
+
+stop review:
+  stage: deploy review
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - npm i --global surge
+    - surge teardown http://cb591-loan-amortization-$CI_ENVIRONMENT_SLUG.surge.sh
+    - echo "Remove review app"
+  when: manual
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    action: stop
 
 deploy staging:
   stage: deploy staging
