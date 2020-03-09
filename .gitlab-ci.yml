@@ -1,4 +1,12 @@
-image: node
+image: node:10
+
+stages:
+  - build
+  - test
+  - deploy review
+  - deploy staging
+  - deploy production
+  - production tests
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
@@ -9,16 +17,12 @@ variables:
   STAGING_DOMAIN: http://cb591-loan-amortization-staging.surge.sh
   PRODUCTION_DOMAIN: http://cb591-loan-amortization.surge.sh
 
-stages:
-  - build
-  - test
-  - deploy review
-  - deploy staging
-  - deploy production
-  - production tests
 
-build site:
+build website:
   stage: build
+  only:
+    - master
+    - merge_requests
   script:
     - echo $CI_COMMIT_SHORT_SHA
     - CI=false
@@ -30,15 +34,20 @@ build site:
     paths:
       - ./public
 
-
 test artifact:
   image: alpine
+  only:
+    - master
+    - merge_requests
   stage: test
   script:
     - grep -q "calculator" ./public/index.html
 
 test website:
   stage: test
+  only:
+    - master
+    - merge_requests
   script:
     - npm i
     - npm i -g create-react-app
