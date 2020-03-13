@@ -27,7 +27,6 @@ const DURATION = {
 };
 
 export default props => {
-  const { onReset } = props;
 
   /**
    * @param amount
@@ -134,6 +133,7 @@ export default props => {
     setTimeout(() => {
       props.onCalculated({
         currency,
+        periods,
         equalTotalPayments,
         equalPrincipalPayments
       });
@@ -141,15 +141,20 @@ export default props => {
     }, 1000);
   };
 
+  const onReset = (resetForm) => {
+    resetForm();
+    props.onCalculated(null);
+  }
+
   return (
     <Card elevation={5}>
       <CardHeader title="Loan repayment calculator" />
       <CardContent>
         <Formik
           initialValues={{
-            amount: "10000",
-            apr: "5",
-            period: "12",
+            amount: "",
+            apr: "",
+            period: "",
             periodType: DURATION.YEAR,
             currency: "£"
           }}
@@ -158,6 +163,7 @@ export default props => {
             amount: Yup.number()
               .integer("Amount must be an integer")
               .positive("Amount cannot be less than 0")
+              .max(1000000, "Period cannot be greater than 1000")
               .required("Amount is required")
               .typeError("Amount must be a number"),
             apr: Yup.number()
@@ -184,7 +190,8 @@ export default props => {
               isSubmitting,
               handleChange,
               handleBlur,
-              handleSubmit
+              handleSubmit,
+              resetForm
             } = props;
             return (
               <form onSubmit={handleSubmit}>
@@ -289,7 +296,7 @@ export default props => {
                             tabIndex="-1"
                             variant="contained"
                             color="secondary"
-                            onClick={onReset}
+                            onClick={() => onReset(resetForm)}
                             disabled={isSubmitting}
                           >
                             Clear

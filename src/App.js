@@ -10,19 +10,15 @@ const App = props => {
     setData(data);
   };
 
-  const handleReset = () => {
-    setData(null);
-  };
-
   return (
     <Box mt={isWidthDown("sm", props.width) ? 2 : 20}>
       <Grid container spacing={2} className="main">
         <Grid item xs={false} md={1} />
         <Grid item xs={12} md={3}>
-          <Calculator onCalculated={handleCalculated} onReset={handleReset} />
+          <Calculator onCalculated={handleCalculated} />
         </Grid>
         <Grid item xs={12} md={7}>
-          {data !== null && <Report onReset={handleReset} data={data} />}
+          {data !== null && <Report data={data} />}
         </Grid>
         <Grid item xs={false} md={1} />
       </Grid>

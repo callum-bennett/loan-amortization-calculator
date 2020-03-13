@@ -37,7 +37,7 @@ function TabPanel(props) {
 
 export default props => {
   const {
-    data: { currency, equalTotalPayments, equalPrincipalPayments }
+    data: { equalTotalPayments, equalPrincipalPayments, currency, periods }
   } = props;
 
   const [tab, setTab] = React.useState(0);
@@ -97,7 +97,7 @@ export default props => {
         >
           <Tab label="Equal Total Payments" icon={<TrendingFlatIcon />} />
           <Tab label="Equal Principal Payments" icon={<TrendingDownIcon />} />
-          <Tab label="Comparison" icon={<ShowChartIcon />} />
+          {periods > 1 && <Tab label="Comparison" icon={<ShowChartIcon />} />}
         </Tabs>
       </Paper>
 
