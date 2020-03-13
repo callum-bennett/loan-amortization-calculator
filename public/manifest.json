@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Loan amortization calculator",
+  "name": "Loan amortization calculator",
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#000000",
